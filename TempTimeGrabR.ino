@@ -7,10 +7,18 @@ struct ts t;
 const int pinTempSensor = A0;     // Grove - Temperature Sensor connect to A0
 const int B = 4275;               // B value of the thermistor
 const long R0 = 100000;            // R0 = 100k
+const int DATA_BTN = 2;
+const int DATA_LED = 3;
+
+int dataBtnPrev = LOW;
+int dataBtnCurrent = LOW;
 
 const int CS_PIN = 10;
 bool isSDCardInitialized = false;
-
+bool isWritingData = false;
+String allRooms[6]= {"basement","master","office","living","laundry","dining"};
+int currentRoomIdx = 0;
+String currentRoom = allRooms[currentRoomIdx];
 
 LiquidCrystal_I2C lcd(0x3F, 20, 4);
 
@@ -42,6 +50,8 @@ void setup() {
   
   //CS pin must be configured as an output
   pinMode(CS_PIN, OUTPUT);
+  pinMode(DATA_BTN, INPUT);
+  pinMode(DATA_LED, OUTPUT);
   
 }
 
@@ -49,14 +59,55 @@ void loop() {
   displayDateTime();
   displayTemp();
   trySDCard();
-  delay(1000);
+  if (!isWritingData){
+    setRoom();
+    
+  }
+  checkWriteDataButton();
+  
+  delay(500);
+}
+
+void checkWriteDataButton(){
+  dataBtnCurrent = debounce(isWritingData, DATA_BTN);
+  if (dataBtnPrev == LOW && dataBtnCurrent == HIGH){
+    isWritingData = !isWritingData;
+  }
+  if (isWritingData){
+    // turn on data writing and LED
+    digitalWrite(DATA_LED, HIGH);
+    
+  }
+  else{
+    //turn off data writing and LED
+    //isWritingData = false;
+    digitalWrite(DATA_LED, LOW);
+    
+  }
+}
+
+boolean debounce(boolean last, int button)
+{
+ boolean current = digitalRead(button);    // Read the button state
+ if (last != current)                      // If it's different…
+ {
+  delay(5);                                // Wait 5ms
+  current = digitalRead(button);           // Read it again
+ }
+ return current;                           // Return the current value
+}
+
+void setRoom(){
+  currentRoom = allRooms[currentRoomIdx];
+  lcd.setCursor(1,1);
+  lcd.print(currentRoom);
 }
 
 void trySDCard(){
  if (isSDCardInitialized){
   return;
  }
- lcd.setCursor(1,1);
+ lcd.setCursor(1,2);
  if (!SD.begin(CS_PIN))
  {
   lcd.print("Card Failue");
@@ -90,7 +141,7 @@ void displayDateTime(){
   lcd.print(t.mday);
   lcd.print("/");
   lcd.print(t.year);
-  lcd.print("-");
+  lcd.print(" ");
   //Print Time
     if (t.hour < 10){
     lcd.print("0");
