@@ -18,6 +18,8 @@ int dataBtnCurrent = LOW;
 int roomBtnPrev = LOW;
 int roomBtnCurrent = LOW;
 
+long lastWriteTime = 0;
+
 const int CS_PIN = 10;
 bool isSDCardInitialized = false;
 bool isWritingData = false;
@@ -70,9 +72,28 @@ void loop() {
   if (!isWritingData){
     setRoom();
   }
+  else{
+    if (millis() - lastWriteTime > 5000){
+      writeTempData();
+    }
+  }
   checkWriteDataButton();
   
   delay(500);
+}
+
+void writeTempData(){
+  lastWriteTime = millis();
+   File dataFile = SD.open("2021Temp.csv", FILE_WRITE);
+   if (dataFile)
+   {
+    dataFile.print(currentRoom);
+    dataFile.print(",");
+    dataFile.print(getTime());
+    dataFile.print(",");
+    dataFile.print(getTemp());
+    dataFile.close(); //Data isn't written until we run close()!
+   }
 }
 
 void checkChangeRoomButton(){
@@ -90,7 +111,6 @@ void checkChangeRoomButton(){
       currentRoomIdx++;
   }
 }
-
 
 void checkWriteDataButton(){
   dataBtnCurrent = debounce(isWritingData, DATA_BTN);
@@ -181,6 +201,35 @@ void displayDateTime(){
     lcd.print("0");
   }
   lcd.print(t.sec);
+}
+
+String getTime(){
+  DS3231_get(&t);
+  String dateTime = "";
+
+  if (t.mon < 10){
+    dateTime += "0";
+  }
+  dateTime += t.mon + "/";
+  
+  if (t.mday < 10){
+    dateTime += "0";
+  }
+  dateTime += t.mday + "/" + t.year;
+  dateTime += " ";
+  if (t.hour < 10){
+    dateTime += "0";
+  }
+  dateTime += t.hour + ":";
+  if (t.min < 10){
+    dateTime += "0";
+  }
+  dateTime += t.min + ".";
+  if (t.sec < 10){
+    dateTime += "0";
+  }
+  dateTime+= t.sec;
+  return dateTime;
 }
 
 float getTemp(){
