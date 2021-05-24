@@ -9,16 +9,22 @@ const int B = 4275;               // B value of the thermistor
 const long R0 = 100000;            // R0 = 100k
 const int DATA_BTN = 2;
 const int DATA_LED = 3;
+const int ROOM_BTN = 4;
+const int ROOM_COUNT = 6;
 
 int dataBtnPrev = LOW;
 int dataBtnCurrent = LOW;
 
+int roomBtnPrev = LOW;
+int roomBtnCurrent = LOW;
+
 const int CS_PIN = 10;
 bool isSDCardInitialized = false;
 bool isWritingData = false;
-String allRooms[6]= {"basement","master","office","living","laundry","dining"};
+String allRooms[ROOM_COUNT]= {"basement","master    ","office   ","living    ","laundry    ","dining    "};
 int currentRoomIdx = 0;
 String currentRoom = allRooms[currentRoomIdx];
+bool changeRoomBtnCurrent = false;
 
 LiquidCrystal_I2C lcd(0x3F, 20, 4);
 
@@ -51,6 +57,7 @@ void setup() {
   //CS pin must be configured as an output
   pinMode(CS_PIN, OUTPUT);
   pinMode(DATA_BTN, INPUT);
+  pinMode(ROOM_BTN, INPUT);
   pinMode(DATA_LED, OUTPUT);
   
 }
@@ -59,14 +66,31 @@ void loop() {
   displayDateTime();
   displayTemp();
   trySDCard();
+  checkChangeRoomButton();
   if (!isWritingData){
     setRoom();
-    
   }
   checkWriteDataButton();
   
   delay(500);
 }
+
+void checkChangeRoomButton(){
+  roomBtnCurrent = debounce(changeRoomBtnCurrent, ROOM_BTN);
+  if (roomBtnPrev == LOW && roomBtnCurrent == HIGH){
+    changeRoomBtnCurrent = !changeRoomBtnCurrent;
+  }
+  if (changeRoomBtnCurrent){
+    changeRoomBtnCurrent = false;
+      if (currentRoomIdx == ROOM_COUNT-1)
+      {
+        currentRoomIdx = 0;
+        return;
+      }
+      currentRoomIdx++;
+  }
+}
+
 
 void checkWriteDataButton(){
   dataBtnCurrent = debounce(isWritingData, DATA_BTN);
