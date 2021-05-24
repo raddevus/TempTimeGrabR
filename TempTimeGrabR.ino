@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include <ds3231.h>
 #include <SD.h>
+#include <EEPROM.h>
  
 struct ts t;
 const int pinTempSensor = A0;     // Grove - Temperature Sensor connect to A0
@@ -10,7 +11,10 @@ const long R0 = 100000;            // R0 = 100k
 const int DATA_BTN = 2;
 const int DATA_LED = 3;
 const int ROOM_BTN = 4;
-const int ROOM_COUNT = 6;
+const int ROOM_COUNT = 7;
+
+// EEPROM Memory location (index) where last room idx is stored
+const int ROOMIDX_FIRST_BYTE = 0;
 
 int dataBtnPrev = LOW;
 int dataBtnCurrent = LOW;
@@ -23,7 +27,7 @@ long lastWriteTime = 0;
 const int CS_PIN = 10;
 bool isSDCardInitialized = false;
 bool isWritingData = false;
-String allRooms[ROOM_COUNT]= {"basement","master    ","office   ","living    ","laundry    ","dining    "};
+String allRooms[ROOM_COUNT]= {"basement","master","office","living","laundry","dining", "master bath"};
 int currentRoomIdx = 0;
 String currentRoom = allRooms[currentRoomIdx];
 bool changeRoomBtnCurrent = false;
@@ -61,6 +65,8 @@ void setup() {
   pinMode(DATA_BTN, INPUT);
   pinMode(ROOM_BTN, INPUT);
   pinMode(DATA_LED, OUTPUT);
+
+  loadLastRoomUsed();
   
 }
 
@@ -82,16 +88,28 @@ void loop() {
   delay(500);
 }
 
+void loadLastRoomUsed(){
+  currentRoomIdx = EEPROM.read(ROOMIDX_FIRST_BYTE);
+  // insuring the currentRoomIdx is always a valid value.
+  if (currentRoomIdx >= (ROOM_COUNT) || currentRoomIdx < 0){
+    currentRoomIdx = 0;
+  }
+  Serial.println(currentRoomIdx);
+}
+
 void writeTempData(){
   lastWriteTime = millis();
-   File dataFile = SD.open("2021Temp.csv", FILE_WRITE);
+  //Write the room to EEPROM so it'll be loaded the next
+  // time the device is restarted.
+  writeDataToEEProm((byte)currentRoomIdx);
+   File dataFile = SD.open("2021T.csv", FILE_WRITE);
    if (dataFile)
    {
     dataFile.print(currentRoom);
     dataFile.print(",");
     dataFile.print(getTime());
     dataFile.print(",");
-    dataFile.print(getTemp());
+    dataFile.println(getTemp());
     dataFile.close(); //Data isn't written until we run close()!
    }
 }
@@ -145,6 +163,12 @@ void setRoom(){
   currentRoom = allRooms[currentRoomIdx];
   lcd.setCursor(1,1);
   lcd.print(currentRoom);
+  unsigned int roomNameLength = currentRoom.length();
+  byte displaySpaces = (byte)(20 - roomNameLength);
+  char spaces[displaySpaces];
+  memset(spaces, ' ', displaySpaces-1);
+  spaces[displaySpaces] = '\0';
+  lcd.print(spaces);
 }
 
 void trySDCard(){
@@ -210,25 +234,25 @@ String getTime(){
   if (t.mon < 10){
     dateTime += "0";
   }
-  dateTime += t.mon + "/";
+  dateTime += String(t.mon) + "/";
   
   if (t.mday < 10){
     dateTime += "0";
   }
-  dateTime += t.mday + "/" + t.year;
+  dateTime += String(t.mday) + "/" + String(t.year);
   dateTime += " ";
   if (t.hour < 10){
     dateTime += "0";
   }
-  dateTime += t.hour + ":";
+  dateTime += String(t.hour) + ":";
   if (t.min < 10){
     dateTime += "0";
   }
-  dateTime += t.min + ".";
+  dateTime += String(t.min) + ".";
   if (t.sec < 10){
     dateTime += "0";
   }
-  dateTime+= t.sec;
+  dateTime+= String(t.sec);
   return dateTime;
 }
 
@@ -239,4 +263,14 @@ float getTemp(){
   float temperature = 1.0/(log(R/R0)/B+1/298.15)-273.15; // convert to temperature via datasheet
   temperature = (temperature * 1.8) + 32;
   return temperature;
+}
+
+void writeDataToEEProm(byte targetValue){
+  if (EEPROM.read(ROOMIDX_FIRST_BYTE) == targetValue){
+    // Nothing to do since the value is already set.
+    // We only want to write to EEPROM when it has actually
+    // changed since we want to save EEPROM writes.
+    return;
+  }
+  EEPROM.write(ROOMIDX_FIRST_BYTE, targetValue);
 }
