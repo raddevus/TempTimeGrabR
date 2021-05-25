@@ -181,7 +181,7 @@ void trySDCard(){
  lcd.setCursor(1,2);
  if (!SD.begin(CS_PIN))
  {
-  lcd.print("Card Failue");
+  lcd.print("Card Failure");
   Serial.println("Card Failure");
   return;
  }
