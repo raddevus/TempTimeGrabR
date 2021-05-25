@@ -85,6 +85,7 @@ void loop() {
   }
   else{
     if (millis() - lastWriteTime > 5000){
+      readTemp();
       // next line insures that the temp is only written
       // if it changed in the last 5 seconds
       if (currentTemp != prevTemp){
@@ -134,7 +135,6 @@ void writeTempData(){
     dataFile.print(",");
     dataFile.print(getTime());
     dataFile.print(",");
-    readTemp();
     dataFile.println(currentTemp);
     dataFile.close(); //Data isn't written until we run close()!
     Serial.print("writing data...");
