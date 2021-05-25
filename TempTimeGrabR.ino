@@ -22,7 +22,7 @@ int dataBtnCurrent = LOW;
 int roomBtnPrev = LOW;
 int roomBtnCurrent = LOW;
 
-long lastWriteTime = 0;
+unsigned long lastWriteTime = 0;
 
 const int CS_PIN = 10;
 bool isSDCardInitialized = false;
@@ -31,7 +31,7 @@ String allRooms[ROOM_COUNT]= {"basement","master","office","living","laundry","d
 int currentRoomIdx = 0;
 String currentRoom = allRooms[currentRoomIdx];
 bool changeRoomBtnCurrent = false;
-int lastTempRead = 0;
+unsigned long lastTempRead = 0;
 float currentTemp = 0;
 
 LiquidCrystal_I2C lcd(0x3F, 20, 4);
