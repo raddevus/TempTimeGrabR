@@ -31,8 +31,10 @@ String allRooms[ROOM_COUNT]= {"basement","master","office","living","laundry","d
 int currentRoomIdx = 0;
 String currentRoom = allRooms[currentRoomIdx];
 bool changeRoomBtnCurrent = false;
-unsigned long lastTempRead = 0;
+unsigned long lastTempReadMillis = 0;
 float currentTemp = 0;
+float prevTemp = 0;
+byte writeFlag = 0;
 
 LiquidCrystal_I2C lcd(0x3F, 20, 4);
 
@@ -83,12 +85,32 @@ void loop() {
   }
   else{
     if (millis() - lastWriteTime > 5000){
-      writeTempData();
+      // next line insures that the temp is only written
+      // if it changed in the last 5 seconds
+      if (currentTemp != prevTemp){
+        writeTempData();
+        Serial.print("writeFlag...");
+        displayDataWrittenLcd();
+      }
     }
   }
   checkWriteDataButton();
   
   delay(500);
+}
+
+void displayDataWrittenLcd(){
+  // a little indicator that data was written
+  lcd.setCursor(18,2);
+  if (writeFlag == 0){
+    lcd.print("+");  
+    writeFlag = 1;
+  }
+  else
+  {
+    lcd.print("-");
+    writeFlag = 0;
+  }
 }
 
 void loadLastRoomUsed(){
@@ -115,6 +137,7 @@ void writeTempData(){
     readTemp();
     dataFile.println(currentTemp);
     dataFile.close(); //Data isn't written until we run close()!
+    Serial.print("writing data...");
    }
 }
 
@@ -268,14 +291,16 @@ String getTime(){
 
 void readTemp(){
   // only allowing the temp module to be read from every 5 seconds
-  if ((millis() - lastTempRead) > 4500){
+  if ((millis() - lastTempReadMillis) > 4500){
     int a = analogRead(pinTempSensor);
     float R = 1023.0/a-1.0;
     R = R0*R;
     float temperature = 1.0/(log(R/R0)/B+1/298.15)-273.15; // convert to temperature via datasheet
     temperature = (temperature * 1.8) + 32;
+    // store currentTemp in prevTemp for later use.
+    prevTemp = currentTemp;
     currentTemp = temperature;
-    lastTempRead = millis();
+    lastTempReadMillis = millis();
   }
 }
 
