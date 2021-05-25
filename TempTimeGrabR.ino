@@ -31,6 +31,8 @@ String allRooms[ROOM_COUNT]= {"basement","master","office","living","laundry","d
 int currentRoomIdx = 0;
 String currentRoom = allRooms[currentRoomIdx];
 bool changeRoomBtnCurrent = false;
+int lastTempRead = 0;
+float currentTemp = 0;
 
 LiquidCrystal_I2C lcd(0x3F, 20, 4);
 
@@ -109,7 +111,8 @@ void writeTempData(){
     dataFile.print(",");
     dataFile.print(getTime());
     dataFile.print(",");
-    dataFile.println(getTemp());
+    readTemp();
+    dataFile.println(currentTemp);
     dataFile.close(); //Data isn't written until we run close()!
    }
 }
@@ -190,7 +193,13 @@ void trySDCard(){
 
 void displayTemp(){
   lcd.setCursor(2,3);
-  lcd.print(getTemp());
+  if (!isWritingData){
+    // I'm controlling how often the temp module
+    // is read from in an effort to determine if it
+    // becomes more accurate.
+    readTemp();
+  }
+  lcd.print(currentTemp);
   
 }
 
@@ -256,13 +265,17 @@ String getTime(){
   return dateTime;
 }
 
-float getTemp(){
-  int a = analogRead(pinTempSensor);
-  float R = 1023.0/a-1.0;
-  R = R0*R;
-  float temperature = 1.0/(log(R/R0)/B+1/298.15)-273.15; // convert to temperature via datasheet
-  temperature = (temperature * 1.8) + 32;
-  return temperature;
+void readTemp(){
+  // only allowing the temp module to be read from every 5 seconds
+  if ((millis() - lastTempRead) > 4500){
+    int a = analogRead(pinTempSensor);
+    float R = 1023.0/a-1.0;
+    R = R0*R;
+    float temperature = 1.0/(log(R/R0)/B+1/298.15)-273.15; // convert to temperature via datasheet
+    temperature = (temperature * 1.8) + 32;
+    currentTemp = temperature;
+    lastTempRead = millis();
+  }
 }
 
 void writeDataToEEProm(byte targetValue){
