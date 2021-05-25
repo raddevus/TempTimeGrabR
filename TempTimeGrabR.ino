@@ -64,6 +64,7 @@ void setup() {
   
   //CS pin must be configured as an output
   pinMode(CS_PIN, OUTPUT);
+  pinMode(pinTempSensor, INPUT);
   pinMode(DATA_BTN, INPUT);
   pinMode(ROOM_BTN, INPUT);
   pinMode(DATA_LED, OUTPUT);
