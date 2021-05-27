@@ -11,7 +11,6 @@ const long R0 = 100000;            // R0 = 100k
 const int DATA_BTN = 2;
 const int DATA_LED = 3;
 const int ROOM_BTN = 4;
-const int ROOM_COUNT = 7;
 
 // EEPROM Memory location (index) where last room idx is stored
 const int ROOMIDX_FIRST_BYTE = 0;
@@ -27,6 +26,8 @@ unsigned long lastWriteTime = 0;
 const int CS_PIN = 10;
 bool isSDCardInitialized = false;
 bool isWritingData = false;
+// ROOM_COUNT must match number of rooms defined in allRooms array.
+const int ROOM_COUNT = 7;
 String allRooms[ROOM_COUNT]= {"basement","master","office","living","laundry","dining", "master bath"};
 int currentRoomIdx = 0;
 String currentRoom = allRooms[currentRoomIdx];
@@ -41,9 +42,7 @@ LiquidCrystal_I2C lcd(0x3F, 20, 4);
 void setup() {
   lcd.init();
   lcd.begin(20,4);
-  lcd.setCursor(2,0);
   lcd.backlight();
-  lcd.print("Hello, LCD!"); 
   Wire.begin();
   DS3231_init(DS3231_CONTROL_INTCN);
   /*----------------------------------------------------------------------------
@@ -79,8 +78,11 @@ void loop() {
   displayDateTime();
   displayTemp();
   trySDCard();
-  checkChangeRoomButton();
   if (!isWritingData){
+    // do not allow the room to change
+    // (if data is being written),
+    // even if user clicks button 
+    checkChangeRoomButton();
     setRoom();
   }
   else{
@@ -96,8 +98,6 @@ void loop() {
     }
   }
   checkWriteDataButton();
-  
-  delay(500);
 }
 
 void displayDataWrittenLcd(){
@@ -146,6 +146,7 @@ void checkChangeRoomButton(){
   if (roomBtnPrev == LOW && roomBtnCurrent == HIGH){
     changeRoomBtnCurrent = !changeRoomBtnCurrent;
   }
+  roomBtnPrev = roomBtnCurrent;
   if (changeRoomBtnCurrent){
     changeRoomBtnCurrent = false;
       if (currentRoomIdx == ROOM_COUNT-1)
@@ -162,6 +163,7 @@ void checkWriteDataButton(){
   if (dataBtnPrev == LOW && dataBtnCurrent == HIGH){
     isWritingData = !isWritingData;
   }
+  dataBtnPrev = dataBtnCurrent;
   if (isWritingData){
     // turn on data writing and LED
     digitalWrite(DATA_LED, HIGH);
@@ -211,11 +213,19 @@ void trySDCard(){
  }
  Serial.println("Card Ready"); 
  
- lcd.print("SD initialized");
+ lcd.print("SD ready");
  isSDCardInitialized = true;
 }
 
 void displayTemp(){
+  if (millis() < 5000){
+    // We don't want to read or display
+    // the temp when the device boots up
+    // because temp module isn't ready yet.
+    return;
+  }
+  lcd.setCursor(0,3);
+  lcd.print("F");
   lcd.setCursor(2,3);
   if (!isWritingData){
     // I'm controlling how often the temp module
