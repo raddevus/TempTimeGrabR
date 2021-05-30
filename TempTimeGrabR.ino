@@ -29,7 +29,7 @@ bool isSDCardInitialized = false;
 bool isWritingData = false;
 // ROOM_COUNT must match number of rooms defined in allRooms array.
 const int ROOM_COUNT = 7;
-String allRooms[ROOM_COUNT]= {"basement","master","office","living","laundry","dining", "master bath"};
+const char* allRooms[ROOM_COUNT]= {"basement","master","office","living","laundry","dining", "master bath"};
 int currentRoomIdx = 0;
 String currentRoom = allRooms[currentRoomIdx];
 bool changeRoomBtnCurrent = false;
@@ -112,6 +112,37 @@ void loop() {
   }
   if (command == "getTemp"){
       SW_Serial.println(currentRoom + " : " + currentTemp);
+  }
+
+  // #### Allow Data Write start/stop to be done via BT
+  if (command == "startWrite"){
+    // turns on logging of temp data (to SD card)
+    // turn on data writing and LED
+    isWritingData = true;
+    digitalWrite(DATA_LED, HIGH);
+    SW_Serial.println(currentRoom + " : Writing data.");
+  }
+  if (command == "stopWrite"){
+    // turns of logging of temp data
+    // turn off data writing and LED
+    isWritingData = false;
+    digitalWrite(DATA_LED, LOW);
+    SW_Serial.println(currentRoom + " : Stopped writing.");
+  }
+  
+  if (command == "getStatus"){
+    //get device date/time, room name, temp and status of data writing
+    // To save memory I'm reusing the command String instead of 
+    // instantiating a new one.
+    command = "";
+    command.concat(getTime()+ "\n");
+    command.concat(currentRoom + "\n");
+    char buf[5];
+    dtostrf(currentTemp, 4, 2, buf);  //4 is mininum width, 2 is precision
+    command.concat(buf);
+    command.concat("\nisWritingData: ");
+    command.concat(isWritingData ? "true" : "false");
+    SW_Serial.println(command);    
   }
 }
 
