@@ -3,7 +3,8 @@
 #include <ds3231.h>
 #include <SD.h>
 #include <EEPROM.h>
- 
+#include <SoftwareSerial.h>
+
 struct ts t;
 const int pinTempSensor = A0;     // Grove - Temperature Sensor connect to A0
 const int B = 4275;               // B value of the thermistor
@@ -36,6 +37,8 @@ unsigned long lastTempReadMillis = 0;
 float currentTemp = 0;
 float prevTemp = 0;
 byte writeFlag = 0;
+
+SoftwareSerial SW_Serial(8, 9); // RX, TX
 
 LiquidCrystal_I2C lcd(0x3F, 20, 4);
 
@@ -71,6 +74,7 @@ void setup() {
   pinMode(DATA_LED, OUTPUT);
 
   loadLastRoomUsed();
+  SW_Serial.begin(38400);
   
 }
 
@@ -98,6 +102,17 @@ void loop() {
     }
   }
   checkWriteDataButton();
+  // Handle BT Commands
+  String command = "";
+  while (SW_Serial.available()){
+    command.concat((char)SW_Serial.read());
+  }
+  if (command != ""){
+    Serial.println(command);
+  }
+  if (command == "getTemp"){
+      SW_Serial.println(currentRoom + " : " + currentTemp);
+  }
 }
 
 void displayDataWrittenLcd(){
