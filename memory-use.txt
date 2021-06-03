@@ -1,0 +1,7 @@
+23590 bytes used
+23390 bytes used after converting command to byte
+23394 bytes working with String  1500 mem
+
+23436 bytes after changing currentRoom and including getString() 1520 mem bytes
+23196 bytes 1462 mem bytes
+
