@@ -76,14 +76,13 @@ void setup() {
   
   loadLastRoomUsed();
   SW_Serial.begin(38400);
-  Serial.begin(9600);
+  initSDCard();
   
 }
 
 void loop() {
   displayDateTime();
   displayTemp();
-  trySDCard();
   if (!isWritingData){
     // do not allow the room to change
     // (if data is being written),
@@ -113,15 +112,18 @@ void loop() {
   }
   switch (command){
     case 49: { // ASCII Char 1 - get Temperature
-      Serial.println("got 1");
-      Serial.println(getString(currentRoom) + " : " + currentTemp);
-      SW_Serial.print(getString(currentRoom) + " : " + currentTemp);
+      // It seemed as if this code returned too fast
+      // when I had no Serial.println() so I'm adding a delay.
+      // It could be the Android program itself.
+      delay(5);
+      SW_Serial.println(getString(currentRoom) + " : " + currentTemp);
       break;
     }
     case 50: { // ASCII char 2 - start data write
       // #### Allow Data Write start/stop to be done via BT
       // turns on logging of temp data (to SD card)
       // turn on data writing and LED
+      delay(5);
       isWritingData = true;
       digitalWrite(DATA_LED, HIGH);
       SW_Serial.println(getString(currentRoom) + " : Writing data.");
@@ -147,7 +149,7 @@ void loop() {
       outputStr.concat(buf);
       outputStr.concat("\nisWritingData: ");
       outputStr.concat(isWritingData ? "true" : "false");
-      SW_Serial.println(command);    
+      SW_Serial.println(outputStr);    
       break;
     }
     
@@ -252,19 +254,15 @@ void setRoom(){
   lcd.print(spaces);
 }
 
-void trySDCard(){
- if (isSDCardInitialized){
-  return;
- }
- lcd.setCursor(1,2);
- if (!SD.begin(CS_PIN))
- {
-  lcd.print("Card Failure");
-  return;
- }
-
- lcd.print("SD ready");
- isSDCardInitialized = true;
+void initSDCard(){
+  lcd.setCursor(1,2);
+  if (!SD.begin(CS_PIN))
+  {
+    lcd.print("Please add SD Card");
+    return;
+  }
+  isSDCardInitialized = true;
+  lcd.print("SD ready");
 }
 
 void displayTemp(){
@@ -284,40 +282,13 @@ void displayTemp(){
     readTemp();
   }
   lcd.print(currentTemp);
-  
 }
 
 void displayDateTime(){
   DS3231_get(&t);
   //Print Date
   lcd.setCursor(0,0);
-  if (t.mon < 10){
-    lcd.print("0");
-  }
-  lcd.print(t.mon);
-  lcd.print("/");
-  if (t.mday < 10){
-    lcd.print("0");
-  }
-  lcd.print(t.mday);
-  lcd.print("/");
-  lcd.print(t.year);
-  lcd.print(" ");
-  //Print Time
-    if (t.hour < 10){
-    lcd.print("0");
-  }
-  lcd.print(t.hour);
-  lcd.print(":");
-  if (t.min < 10){
-    lcd.print("0");
-  }
-  lcd.print(t.min);
-  lcd.print(".");
-  if (t.sec < 10){
-    lcd.print("0");
-  }
-  lcd.print(t.sec);
+  lcd.print(getTime());
 }
 
 String getTime(){
