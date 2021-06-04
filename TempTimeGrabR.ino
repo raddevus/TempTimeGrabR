@@ -152,6 +152,50 @@ void loop() {
       SW_Serial.println(outputStr);    
       break;
     }
+    case 53: { // ASCII char 5 - retreive temperatue file
+      if (isWritingData){
+        // Don't want to retrieve data while program is capturing.
+        SW_Serial.println("Program is writing to SD Card. Can't retrieve data right now.");
+        return;
+      }
+      else{
+        if (isSDCardInitialized){
+        File dataFile = SD.open("2021T.csv", FILE_READ);
+        outputStr = "";
+        
+        if (dataFile) { 
+          // Serial.begin(115200);
+          int counter = 0;
+          while (dataFile.available()) { //execute while file is available
+              counter++;
+              char letter = dataFile.read(); //read next character from file
+              // I strip off the 13 found on each line of the 
+              // text file, then I put just one back on (below 
+              // in the SW_Serial.prinln(output) so that the SoBtEx Android
+              // app will recognize the end of transmission. It's odd
+              // but it works.
+                if (letter != 13){
+                  outputStr.concat(letter);
+                }
+               if (counter %200 == 0){
+                SW_Serial.print(outputStr);
+                delay(15);
+                outputStr = "";
+                counter = 0;
+               }
+              }
+              SW_Serial.println(outputStr);
+              //SW_Serial.println("done");//outputStr); //display all
+              //SW_Serial.println("");
+              dataFile.close(); //close file
+          }
+        }
+        else{
+          SW_Serial.println("There doesn't seem to be an SD Card available to read from.");
+        }
+      }
+      break;
+    }
     
   }
 }
