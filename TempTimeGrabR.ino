@@ -139,11 +139,11 @@ void loop() {
     }
     case 52: { // ASCII char 4 - getStatus
       //get device date/time, room name, temp and status of data writing
-      // To save memory I'm reusing the command String instead of 
+      // To save memory I'm reusing the outputStr String instead of 
       // instantiating a new one.
-      outputStr = "";
-      outputStr.concat(getTime()+ "\n");
-      outputStr.concat(getString(currentRoom) + "\n");
+      
+      getTime(); // concats to outputStr -- just needs an \n;
+      outputStr.concat("\n" + getString(currentRoom) + "\n");
       char buf[5];
       dtostrf(currentTemp, 4, 2, buf);  //4 is mininum width, 2 is precision
       outputStr.concat(buf);
@@ -349,6 +349,8 @@ String getTime(){
     outputStr += "0";
   }
   outputStr+= String(t.sec);
+  // NOTE: do not concat a \n or it will 
+  // show up on the lcd screen
   return outputStr;
 }
 
