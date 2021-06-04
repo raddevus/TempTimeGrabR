@@ -161,13 +161,9 @@ void loop() {
       else{
         if (isSDCardInitialized){
         File dataFile = SD.open("2021T.csv", FILE_READ);
-        outputStr = "";
-        
+
         if (dataFile) { 
-          // Serial.begin(115200);
-          int counter = 0;
           while (dataFile.available()) { //execute while file is available
-              counter++;
               char letter = dataFile.read(); //read next character from file
               // I strip off the 13 found on each line of the 
               // text file, then I put just one back on (below 
@@ -175,18 +171,10 @@ void loop() {
               // app will recognize the end of transmission. It's odd
               // but it works.
                 if (letter != 13){
-                  outputStr.concat(letter);
+                  SW_Serial.print(letter);
                 }
-               if (counter %200 == 0){
-                SW_Serial.print(outputStr);
-                delay(15);
-                outputStr = "";
-                counter = 0;
-               }
               }
-              SW_Serial.println(outputStr);
-              //SW_Serial.println("done");//outputStr); //display all
-              //SW_Serial.println("");
+              SW_Serial.println("");
               dataFile.close(); //close file
           }
         }

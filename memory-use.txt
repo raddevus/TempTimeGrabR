@@ -5,3 +5,8 @@
 23436 bytes after changing currentRoom and including getString() 1520 mem bytes
 23196 bytes 1462 mem bytes
 
+After successfully fixing issues with retrieving the Temperature data file
+Sketch uses 23154 bytes (75%) of program storage space. Maximum is 30720 bytes.
+Global variables use 1590 bytes (77%) of dynamic memory, leaving 458 bytes for local variables. Maximum is 2048 bytes.
+Low memory available, stability problems may occur.
+
