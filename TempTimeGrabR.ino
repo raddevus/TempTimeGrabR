@@ -80,7 +80,7 @@ void setup() {
   pinMode(ROOM_BTN, INPUT);
   pinMode(DATA_LED, OUTPUT);
   
-  strcpy(currentRoom,allRooms[currentRoomIdx]);
+  //strcpy(currentRoom,allRooms[currentRoomIdx]);
   
   loadLastRoomUsed();
   SW_Serial.begin(38400);
@@ -197,17 +197,17 @@ void loop() {
 }
 
 void displayDataWrittenOled(){
-  // a little indicator that data was written
-  display.setCursor(55,2);
-  if (writeFlag == 0){
-    display.print("+");  
-    writeFlag = 1;
-  }
-  else
-  {
-    display.print("-");
-    writeFlag = 0;
-  }
+//  // a little indicator that data was written
+//  display.setCursor(55,2);
+//  if (writeFlag == 0){
+//    display.print("+");  
+//    writeFlag = 1;
+//  }
+//  else
+//  {
+//    display.print("-");
+//    writeFlag = 0;
+//  }
 }
 
 void loadLastRoomUsed(){
@@ -284,14 +284,16 @@ boolean debounce(boolean last, int button)
 
 void setRoom(){
   strcpy(currentRoom,allRooms[currentRoomIdx]);
-  display.setCursor(24,0);
-  display.print(currentRoom);
+  display.setCursor(0,10);
+  display.setTextSize(1);
+  display.println(currentRoom);
   unsigned int roomNameLength = getString(currentRoom).length();
   byte displaySpaces = (byte)(20 - roomNameLength);
   char spaces[displaySpaces];
   memset(spaces, ' ', displaySpaces-1);
   spaces[displaySpaces] = '\0';
-  display.print(spaces);
+  //display.print(spaces);
+  //display.display();
 }
 
 void initSDCard(){
@@ -313,18 +315,16 @@ void displayTemp(){
     // because temp module isn't ready yet.
     return;
   }
-
-  display.setTextColor(SSD1306_WHITE); // Draw white text
-  display.cp437(true);   
-  
-  display.setCursor(2,3);
+  display.setCursor(30,24);
+  display.setTextSize(2);
   if (!isWritingData){
     // I'm controlling how often the temp module
     // is read from in an effort to determine if it
     // becomes more accurate.
     readTemp();
   }
-  display.print(currentTemp);
+  display.println(currentTemp);
+  //display.display();
 }
 
 void displayDateTime(){
@@ -337,7 +337,12 @@ void displayDateTime(){
   display.cp437(true);         // Use full 256 char 'Code Page 437' font
   
   //Print Date
-  display.print(getTime());
+  display.println(getTime());
+  display.println(currentRoom);
+  display.setTextSize(2);
+  display.setCursor(30,24);
+  display.println(currentTemp);
+  display.display();
 }
 
 String getTime(){
