@@ -1,9 +1,17 @@
-#include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 #include <ds3231.h>
 #include <SD.h>
 #include <EEPROM.h>
 #include <SoftwareSerial.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
+
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 struct ts t;
 const int pinTempSensor = A0;     // Grove - Temperature Sensor connect to A0
@@ -42,12 +50,12 @@ String outputStr = "";
 
 SoftwareSerial SW_Serial(8, 9); // RX, TX
 
-LiquidCrystal_I2C lcd(0x3F, 20, 4);
-
 void setup() {
-  lcd.init();
-  lcd.begin(20,4);
-  lcd.backlight();
+
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+  }
+  
   Wire.begin();
   DS3231_init(DS3231_CONTROL_INTCN);
   /*----------------------------------------------------------------------------
@@ -97,7 +105,7 @@ void loop() {
       // if it changed in the last 5 seconds
       if (currentTemp != prevTemp){
         writeTempData();
-        displayDataWrittenLcd();
+        displayDataWrittenOled();
       }
     }
   }
@@ -188,16 +196,16 @@ void loop() {
   }
 }
 
-void displayDataWrittenLcd(){
+void displayDataWrittenOled(){
   // a little indicator that data was written
-  lcd.setCursor(18,2);
+  display.setCursor(55,2);
   if (writeFlag == 0){
-    lcd.print("+");  
+    display.print("+");  
     writeFlag = 1;
   }
   else
   {
-    lcd.print("-");
+    display.print("-");
     writeFlag = 0;
   }
 }
@@ -276,25 +284,26 @@ boolean debounce(boolean last, int button)
 
 void setRoom(){
   strcpy(currentRoom,allRooms[currentRoomIdx]);
-  lcd.setCursor(1,1);
-  lcd.print(currentRoom);
+  display.setCursor(24,0);
+  display.print(currentRoom);
   unsigned int roomNameLength = getString(currentRoom).length();
   byte displaySpaces = (byte)(20 - roomNameLength);
   char spaces[displaySpaces];
   memset(spaces, ' ', displaySpaces-1);
   spaces[displaySpaces] = '\0';
-  lcd.print(spaces);
+  display.print(spaces);
 }
 
 void initSDCard(){
-  lcd.setCursor(1,2);
+  display.setTextSize(1);
+  display.setCursor(40,0);
   if (!SD.begin(CS_PIN))
   {
-    lcd.print("Please add SD Card");
+    display.print("Please add SD Card");
     return;
   }
   isSDCardInitialized = true;
-  lcd.print("SD ready");
+  display.print("SD ready");
 }
 
 void displayTemp(){
@@ -304,23 +313,31 @@ void displayTemp(){
     // because temp module isn't ready yet.
     return;
   }
-  lcd.setCursor(0,3);
-  lcd.print("F");
-  lcd.setCursor(2,3);
+
+  display.setTextColor(SSD1306_WHITE); // Draw white text
+  display.cp437(true);   
+  
+  display.setCursor(2,3);
   if (!isWritingData){
     // I'm controlling how often the temp module
     // is read from in an effort to determine if it
     // becomes more accurate.
     readTemp();
   }
-  lcd.print(currentTemp);
+  display.print(currentTemp);
 }
 
 void displayDateTime(){
   DS3231_get(&t);
+
+  display.clearDisplay();
+  display.setTextSize(1);      // Normal 1:1 pixel scale
+  display.setTextColor(SSD1306_WHITE); // Draw white text
+  display.setCursor(0, 0);     // Start at top-left corner
+  display.cp437(true);         // Use full 256 char 'Code Page 437' font
+  
   //Print Date
-  lcd.setCursor(0,0);
-  lcd.print(getTime());
+  display.print(getTime());
 }
 
 String getTime(){
