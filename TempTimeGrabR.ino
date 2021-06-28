@@ -1,3 +1,4 @@
+#include <TMP36.h>
 #include <Wire.h>
 #include <ds3231.h>
 #include <SD.h>
@@ -13,10 +14,9 @@
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+TMP36 tmp36_3v(A3, 3.29);
+
 struct ts t;
-const int pinTempSensor = A0;     // Grove - Temperature Sensor connect to A0
-const int B = 4275;               // B value of the thermistor
-const long R0 = 100000;            // R0 = 100k
 const int DATA_BTN = 2;
 const int DATA_LED = 3;
 const int ROOM_BTN = 4;
@@ -56,6 +56,9 @@ void setup() {
     Serial.println(F("SSD1306 allocation failed"));
   }
   
+  //analogReference(VDD);
+  analogReference(EXTERNAL);
+  
   Wire.begin();
   DS3231_init(DS3231_CONTROL_INTCN);
   /*----------------------------------------------------------------------------
@@ -75,7 +78,6 @@ void setup() {
 
   //CS pin must be configured as an output
   pinMode(CS_PIN, OUTPUT);
-  pinMode(pinTempSensor, INPUT);
   pinMode(DATA_BTN, INPUT);
   pinMode(ROOM_BTN, INPUT);
   pinMode(DATA_LED, OUTPUT);
@@ -99,7 +101,7 @@ void loop() {
     setRoom();
   }
   else{
-    if (millis() - lastWriteTime > 5000){
+    if (millis() - lastWriteTime > 30000){
       readTemp();
       // next line insures that the temp is only written
       // if it changed in the last 5 seconds
@@ -309,7 +311,7 @@ void initSDCard(){
 }
 
 void displayTemp(){
-  if (millis() < 5000){
+  if (millis() < 1000){
     // We don't want to read or display
     // the temp when the device boots up
     // because temp module isn't ready yet.
@@ -377,18 +379,15 @@ String getTime(){
 }
 
 void readTemp(){
-  // only allowing the temp module to be read from every 5 seconds
-  if ((millis() - lastTempReadMillis) > 4500){
-    int a = analogRead(pinTempSensor);
-    float R = 1023.0/a-1.0;
-    R = R0*R;
-    float temperature = 1.0/(log(R/R0)/B+1/298.15)-273.15; // convert to temperature via datasheet
-    temperature = (temperature * 1.8) + 32;
-    // store currentTemp in prevTemp for later use.
-    prevTemp = currentTemp;
-    currentTemp = temperature;
-    lastTempReadMillis = millis();
+  // only allowing the temp module to be read from every X seconds
+  if ((millis() - lastTempReadMillis) < 10000){
+    return;
   }
+  float temperature = tmp36_3v.getTempF();
+  // store currentTemp in prevTemp for later use.
+  prevTemp = currentTemp;
+  currentTemp = temperature;
+  lastTempReadMillis = millis();
 }
 
 void writeDataToEEProm(byte targetValue){
