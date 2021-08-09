@@ -48,7 +48,7 @@ byte writeFlag = 0;
 byte command = 0;
 String outputStr = "";
 
-SoftwareSerial SW_Serial(8, 9); // RX, TX
+SoftwareSerial SW_Serial(8, 7); // RX, TX
 
 void setup() {
 
