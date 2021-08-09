@@ -4,15 +4,14 @@
 #include <SD.h>
 #include <EEPROM.h>
 #include <SoftwareSerial.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <SSD1306Ascii.h>
+#include <SSD1306AsciiAvrI2c.h>
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
 
-#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+SSD1306AsciiAvrI2c oled;
 
 TMP36 tmp36_3v(A3, 3.29);
 
@@ -51,10 +50,6 @@ String outputStr = "";
 SoftwareSerial SW_Serial(8, 9); // RX, TX
 
 void setup() {
-
-  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-    Serial.println(F("SSD1306 allocation failed"));
-  }
   
   //analogReference(VDD);
   analogReference(EXTERNAL);
@@ -81,12 +76,14 @@ void setup() {
   pinMode(DATA_BTN, INPUT);
   pinMode(ROOM_BTN, INPUT);
   pinMode(DATA_LED, OUTPUT);
-  
-  //strcpy(currentRoom,allRooms[currentRoomIdx]);
-  
+   
   loadLastRoomUsed();
   SW_Serial.begin(38400);
   initSDCard();
+  oled.begin(&Adafruit128x64, 0x3C);
+  oled.clear();
+  oled.setFont(Adafruit5x7);      // Normal 1:1 pixel scale
+  
   
 }
 
@@ -286,28 +283,27 @@ boolean debounce(boolean last, int button)
 
 void setRoom(){
   strcpy(currentRoom,allRooms[currentRoomIdx]);
-  display.setCursor(0,10);
-  display.setTextSize(1);
-  display.println(currentRoom);
+  oled.setCursor(0,10);
+  
+  oled.set1X();
+  oled.println(currentRoom);
   unsigned int roomNameLength = getString(currentRoom).length();
   byte displaySpaces = (byte)(20 - roomNameLength);
   char spaces[displaySpaces];
   memset(spaces, ' ', displaySpaces-1);
   spaces[displaySpaces] = '\0';
-  //display.print(spaces);
-  //display.display();
 }
 
 void initSDCard(){
-  display.setTextSize(1);
-  display.setCursor(40,0);
+  oled.set1X();
+  oled.setCursor(40,0);
   if (!SD.begin(CS_PIN))
   {
-    display.print("Please add SD Card");
+    oled.print("Please add SD Card");
     return;
   }
   isSDCardInitialized = true;
-  display.print("SD ready");
+  oled.print("SD ready");
 }
 
 void displayTemp(){
@@ -317,34 +313,26 @@ void displayTemp(){
     // because temp module isn't ready yet.
     return;
   }
-  display.setCursor(30,24);
-  display.setTextSize(2);
+  oled.setCursor(30,24);
+  oled.set2X();
   if (!isWritingData){
     // I'm controlling how often the temp module
     // is read from in an effort to determine if it
     // becomes more accurate.
     readTemp();
   }
-  display.println(currentTemp);
-  //display.display();
+  oled.println(currentTemp);
 }
 
 void displayDateTime(){
   DS3231_get(&t);
 
-  display.clearDisplay();
-  display.setTextSize(1);      // Normal 1:1 pixel scale
-  display.setTextColor(SSD1306_WHITE); // Draw white text
-  display.setCursor(0, 0);     // Start at top-left corner
-  display.cp437(true);         // Use full 256 char 'Code Page 437' font
-  
   //Print Date
-  display.println(getTime());
-  display.println(currentRoom);
-  display.setTextSize(2);
-  display.setCursor(30,24);
-  display.println(currentTemp);
-  display.display();
+  oled.println(getTime());
+  //oled.println(currentRoom);
+  //oled.set2X();
+  //oled.setCursor(30,24);
+  //oled.println(currentTemp);
 }
 
 String getTime(){
