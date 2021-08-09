@@ -19,7 +19,7 @@ TMP36 tmp36_3v(A3, 3.29);
 struct ts t;
 const int DATA_BTN = 2;
 const int DATA_LED = 3;
-const int ROOM_BTN = 4;
+const int ROOM_BTN = 6;
 
 // EEPROM Memory location (index) where last room idx is stored
 const int ROOMIDX_FIRST_BYTE = 0;
