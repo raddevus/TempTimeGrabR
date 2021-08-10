@@ -18,7 +18,7 @@ TMP36 tmp36_3v(A3, 3.29);
 
 struct ts t;
 const int DATA_BTN = 2;
-const int DATA_LED = 3;
+const int DATA_LED = A2;
 const int ROOM_BTN = 6;
 
 // EEPROM Memory location (index) where last room idx is stored
@@ -32,7 +32,7 @@ int roomBtnCurrent = LOW;
 
 unsigned long lastWriteTime = 0;
 
-const int CS_PIN = 10;
+const int CS_PIN = 3;
 bool isSDCardInitialized = false;
 bool isWritingData = false;
 // ROOM_COUNT must match number of rooms defined in allRooms array.
@@ -51,6 +51,8 @@ String outputStr = "";
 SoftwareSerial SW_Serial(8, 7); // RX, TX
 
 void setup() {
+
+  Serial.begin(9600);
 
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
@@ -101,7 +103,7 @@ void loop() {
     setRoom();
   }
   else{
-    if (millis() - lastWriteTime > 30000){
+    if (millis() - lastWriteTime > 3000){
       readTemp();
       // next line insures that the temp is only written
       // if it changed in the last 5 seconds
@@ -135,7 +137,7 @@ void loop() {
       // turn on data writing and LED
       delay(5);
       isWritingData = true;
-      digitalWrite(DATA_LED, HIGH);
+      analogWrite(DATA_LED, 255);
       SW_Serial.println(getString(currentRoom) + " : Writing data.");
       break;
     }
@@ -143,7 +145,7 @@ void loop() {
       // turns of logging of temp data
       // turn off data writing and LED
       isWritingData = false;
-      digitalWrite(DATA_LED, LOW);
+      analogWrite(DATA_LED, 0);
       SW_Serial.println(getString(currentRoom) + " : Stopped writing.");
       break;
     }
@@ -234,6 +236,7 @@ void writeTempData(){
     dataFile.print(",");
     dataFile.println(currentTemp);
     dataFile.close(); //Data isn't written until we run close()!
+    Serial.println("Wrote data..");
    }
 }
 
@@ -262,14 +265,12 @@ void checkWriteDataButton(){
   dataBtnPrev = dataBtnCurrent;
   if (isWritingData){
     // turn on data writing and LED
-    digitalWrite(DATA_LED, HIGH);
-    
+    analogWrite(DATA_LED, 255);
   }
   else{
     //turn off data writing and LED
     //isWritingData = false;
-    digitalWrite(DATA_LED, LOW);
-    
+    analogWrite(DATA_LED, 0);
   }
 }
 
@@ -304,10 +305,12 @@ void initSDCard(){
   if (!SD.begin(CS_PIN))
   {
     display.print("Please add SD Card");
+    Serial.println("Please add SD Card.");
     return;
   }
   isSDCardInitialized = true;
   display.print("SD ready");
+  Serial.println("SD ready");
 }
 
 void displayTemp(){
@@ -380,7 +383,7 @@ String getTime(){
 
 void readTemp(){
   // only allowing the temp module to be read from every X seconds
-  if ((millis() - lastTempReadMillis) < 10000){
+  if ((millis() - lastTempReadMillis) < 3000){
     return;
   }
   float temperature = tmp36_3v.getTempF();
