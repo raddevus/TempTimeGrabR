@@ -32,7 +32,7 @@ int roomBtnCurrent = LOW;
 
 unsigned long lastWriteTime = 0;
 
-const int CS_PIN = 3;
+const int CS_PIN = 8;
 bool isSDCardInitialized = false;
 bool isWritingData = false;
 // ROOM_COUNT must match number of rooms defined in allRooms array.
@@ -48,7 +48,7 @@ byte writeFlag = 0;
 byte command = 0;
 String outputStr = "";
 
-SoftwareSerial SW_Serial(8, 7); // RX, TX
+SoftwareSerial SW_Serial(3, 7); // RX, TX
 
 void setup() {
 
@@ -57,7 +57,7 @@ void setup() {
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
   }
-  
+
   //analogReference(VDD);
   analogReference(EXTERNAL);
   
@@ -93,8 +93,16 @@ void setup() {
 }
 
 void loop() {
+  // #### Display All Info #####
+  initOled();
   displayDateTime();
   displayTemp();
+  displaySDCardMessage();
+  // display.display() is called
+  // once for all display.
+  display.display();
+  // ##########################
+  
   if (!isWritingData){
     // do not allow the room to change
     // (if data is being written),
@@ -109,7 +117,6 @@ void loop() {
       // if it changed in the last 5 seconds
       if (currentTemp != prevTemp){
         writeTempData();
-        displayDataWrittenOled();
       }
     }
   }
@@ -200,20 +207,6 @@ void loop() {
   }
 }
 
-void displayDataWrittenOled(){
-//  // a little indicator that data was written
-//  display.setCursor(55,2);
-//  if (writeFlag == 0){
-//    display.print("+");  
-//    writeFlag = 1;
-//  }
-//  else
-//  {
-//    display.print("-");
-//    writeFlag = 0;
-//  }
-}
-
 void loadLastRoomUsed(){
   currentRoomIdx = EEPROM.read(ROOMIDX_FIRST_BYTE);
   // insuring the currentRoomIdx is always a valid value.
@@ -300,17 +293,19 @@ void setRoom(){
 }
 
 void initSDCard(){
-  display.setTextSize(1);
-  display.setCursor(40,0);
   if (!SD.begin(CS_PIN))
   {
-    display.print("Please add SD Card");
-    Serial.println("Please add SD Card.");
     return;
   }
   isSDCardInitialized = true;
-  display.print("SD ready");
-  Serial.println("SD ready");
+}
+
+void initOled(){
+  display.clearDisplay();
+  display.setTextSize(1);      // Normal 1:1 pixel scale
+  display.setTextColor(SSD1306_WHITE); // Draw white text
+  display.setCursor(0, 0);     // Start at top-left corner
+  display.cp437(true);         // Use full 256 char 'Code Page 437' font
 }
 
 void displayTemp(){
@@ -332,14 +327,27 @@ void displayTemp(){
   //display.display();
 }
 
+void displaySDCardMessage(){
+  display.setCursor (0,46);
+  display.setTextSize(1);
+  if (isSDCardInitialized){
+    if (isWritingData){
+      display.println("Writing data...");
+    }
+    else{
+      display.println("SD Card is ready.");
+    }
+  }
+  else{
+    display.println("Please insert SD Card");
+    // try initializing again -- in case
+    // sd card is added.
+    initSDCard();
+  }
+}
+
 void displayDateTime(){
   DS3231_get(&t);
-
-  display.clearDisplay();
-  display.setTextSize(1);      // Normal 1:1 pixel scale
-  display.setTextColor(SSD1306_WHITE); // Draw white text
-  display.setCursor(0, 0);     // Start at top-left corner
-  display.cp437(true);         // Use full 256 char 'Code Page 437' font
   
   //Print Date
   display.println(getTime());
@@ -347,7 +355,6 @@ void displayDateTime(){
   display.setTextSize(2);
   display.setCursor(30,24);
   display.println(currentTemp);
-  display.display();
 }
 
 String getTime(){
