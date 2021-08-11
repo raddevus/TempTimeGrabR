@@ -203,7 +203,38 @@ void loop() {
       }
       break;
     }
-    
+    case 54: { // ASCII char 6 - set device time
+      String s;
+      s.concat(SW_Serial.read());
+      s.concat(SW_Serial.read());
+      t.hour=atoi(s.c_str());
+      s = "";
+      s.concat(SW_Serial.read());
+      s.concat(SW_Serial.read());
+      t.min=atoi(s.c_str());
+      s = "";
+      s.concat(SW_Serial.read());
+      s.concat(SW_Serial.read());
+      t.sec=atoi(s.c_str());
+      s = "";
+      s.concat(SW_Serial.read());
+      s.concat(SW_Serial.read());
+      t.mday=atoi(s.c_str());
+
+      s = "";
+      s.concat(SW_Serial.read());
+      s.concat(SW_Serial.read());
+      t.mon=atoi(s.c_str());
+      s = "";
+      s.concat(SW_Serial.read());
+      s.concat(SW_Serial.read());
+      s.concat(SW_Serial.read());
+      s.concat(SW_Serial.read());
+      t.year=atoi(s.c_str());
+ 
+      DS3231_set(t);
+      break;
+    }
   }
 }
 
