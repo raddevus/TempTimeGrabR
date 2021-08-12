@@ -126,7 +126,7 @@ void loop() {
   // Always initialize command to 0 (no-command)
   command = 0;
   // Get the latest command
-  while (SW_Serial.available()){
+  if (SW_Serial.available()){
     command = SW_Serial.read();
   }
   switch (command){
@@ -205,32 +205,17 @@ void loop() {
     }
     case 54: { // ASCII char 6 - set device time
       String s;
-      s.concat(SW_Serial.read());
-      s.concat(SW_Serial.read());
-      t.hour=atoi(s.c_str());
-      s = "";
-      s.concat(SW_Serial.read());
-      s.concat(SW_Serial.read());
-      t.min=atoi(s.c_str());
-      s = "";
-      s.concat(SW_Serial.read());
-      s.concat(SW_Serial.read());
-      t.sec=atoi(s.c_str());
-      s = "";
-      s.concat(SW_Serial.read());
-      s.concat(SW_Serial.read());
-      t.mday=atoi(s.c_str());
-
-      s = "";
-      s.concat(SW_Serial.read());
-      s.concat(SW_Serial.read());
-      t.mon=atoi(s.c_str());
-      s = "";
-      s.concat(SW_Serial.read());
-      s.concat(SW_Serial.read());
-      s.concat(SW_Serial.read());
-      s.concat(SW_Serial.read());
-      t.year=atoi(s.c_str());
+      Serial.println("in settime...");
+      while (SW_Serial.available()){
+        s.concat(char(SW_Serial.read()));
+      }
+      Serial.println(s);
+      t.hour=atoi(s.substring(0,2).c_str());
+      t.min=atoi(s.substring(2,4).c_str());
+      t.sec=atoi(s.substring(4,6).c_str());
+      t.mon=atoi(s.substring(6,8).c_str());
+      t.mday=atoi(s.substring(8,10).c_str());
+      t.year=atoi(s.substring(10).c_str());
  
       DS3231_set(t);
       break;
