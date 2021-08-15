@@ -24,11 +24,11 @@ const int ROOM_BTN = 6;
 // EEPROM Memory location (index) where last room idx is stored
 const int ROOMIDX_FIRST_BYTE = 0;
 
-int dataBtnPrev = LOW;
-int dataBtnCurrent = LOW;
+bool dataBtnPrev = LOW;
+bool dataBtnCurrent = LOW;
 
-int roomBtnPrev = LOW;
-int roomBtnCurrent = LOW;
+bool roomBtnPrev = LOW;
+bool roomBtnCurrent = LOW;
 
 unsigned long lastWriteTime = 0;
 
@@ -49,6 +49,9 @@ byte command = 0;
 String outputStr = "";
 
 SoftwareSerial SW_Serial(3, 7); // RX, TX
+
+typedef void (*ButtonPressHandler) (void);
+
 
 void setup() {
 
@@ -106,8 +109,8 @@ void loop() {
   if (!isWritingData){
     // do not allow the room to change
     // (if data is being written),
-    // even if user clicks button 
-    checkChangeRoomButton();
+    // even if user clicks button
+    checkButton(ROOM_BTN,roomBtnPrev,roomBtnCurrent,checkChangeRoomButton);
     setRoom();
   }
   else{
@@ -120,7 +123,8 @@ void loop() {
       }
     }
   }
-  checkWriteDataButton();
+
+  checkButton(DATA_BTN, dataBtnPrev, dataBtnCurrent, checkWriteDataButton);
   
   // Handle BT Commands
   // Always initialize command to 0 (no-command)
@@ -205,11 +209,9 @@ void loop() {
     }
     case 54: { // ASCII char 6 - set device time
       String s;
-      Serial.println("in settime...");
       while (SW_Serial.available()){
         s.concat(char(SW_Serial.read()));
       }
-      Serial.println(s);
       t.hour=atoi(s.substring(0,2).c_str());
       t.min=atoi(s.substring(2,4).c_str());
       t.sec=atoi(s.substring(4,6).c_str());
@@ -245,15 +247,14 @@ void writeTempData(){
     dataFile.print(",");
     dataFile.println(currentTemp);
     dataFile.close(); //Data isn't written until we run close()!
-    Serial.println("Wrote data..");
    }
 }
 
-void checkChangeRoomButton(){
-  roomBtnCurrent = debounce(changeRoomBtnCurrent, ROOM_BTN);
+void checkChangeRoomButton(void){
   if (roomBtnPrev == LOW && roomBtnCurrent == HIGH){
     changeRoomBtnCurrent = !changeRoomBtnCurrent;
   }
+
   roomBtnPrev = roomBtnCurrent;
   if (changeRoomBtnCurrent){
     changeRoomBtnCurrent = false;
@@ -264,10 +265,10 @@ void checkChangeRoomButton(){
       }
       currentRoomIdx++;
   }
+  return 0;
 }
 
 void checkWriteDataButton(){
-  dataBtnCurrent = debounce(isWritingData, DATA_BTN);
   if (dataBtnPrev == LOW && dataBtnCurrent == HIGH){
     isWritingData = !isWritingData;
   }
@@ -281,6 +282,19 @@ void checkWriteDataButton(){
     //isWritingData = false;
     analogWrite(DATA_LED, 0);
   }
+  return 0;
+}
+
+void checkButton(const int BUTTON,  bool &last, bool &current, ButtonPressHandler handler ){
+  current = debounce(last, BUTTON);              // Read debounced state
+  if (last == LOW && current == HIGH)    // If it was pressed…
+  {
+    // This runs the code that we want to happen 
+    // when the user presses the button.  The function ptr 
+    // allows us to do different types of work
+     handler();
+  }
+  last = current;                        // Reset button value
 }
 
 boolean debounce(boolean last, int button)
